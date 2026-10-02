@@ -1,0 +1,50 @@
+# pi 설정 — jamulsoe
+#
+# ⚠️ 확인 필요: pi 의 설정 파일 경로·키 이름은 버전에 따라 다를 수 있다.
+#    아래는 제네릭 템플릿이다. 실제 pi 버전의 문서를 확인하고 키를 맞춘 뒤 이 주석을 지우세요.
+#
+# pi 가 이 파일을 전혀 읽지 못해도 **워크플로우는 성립한다.**
+# 루트 AGENTS.md 만 읽어도 규약은 전달되고, 게이트는 .githooks/ 와 ./scripts/verify.sh 가 지킨다.
+
+[project]
+name = "jamulsoe"
+instructions = ["AGENTS.md", "docs/CONTRACTS.md", ".agents/WORKFLOW.md"]
+
+[commands]
+check     = "./scripts/check.sh"
+test      = "./scripts/test.sh"
+verify    = "./scripts/verify.sh"
+fast      = "./scripts/verify.sh --fast"
+contracts = "./scripts/contract-check.sh"
+ct        = "./scripts/ct.sh"
+abi       = "./scripts/abi-check.sh"
+mutants   = "./scripts/mutants.sh"
+
+[permissions]
+allow = [
+  "./scripts/*",
+  "cargo fmt*", "cargo clippy*", "cargo check*", "cargo build*",
+  "cargo test*", "cargo nextest*", "cargo tree*",
+  "git status*", "git diff*", "git log*", "git show*",
+]
+ask  = ["cargo install*", "cargo add*", "cargo update*", "rustup*", "git commit*", "git push*", "git tag*"]
+deny = ["rm -rf*", "*--no-verify*", "git push --force*"]
+
+# 보호 경로 — 사람 승인 필요 (AGENTS.md R4, .agents/APPROVAL.md)
+# pi 가 이 키를 지원하지 않으면 .githooks/pre-commit 이 같은 검사를 한다.
+protected_paths = [
+  "docs/PLAN.md",
+  "docs/CONTRACTS.md",
+  "docs/kcmvp/inquiries.md",
+  "docs/adr/",
+  "exports.txt",
+  "include/jamulsoe.h",
+  "rust-toolchain.toml",
+  "scripts/verify.sh",
+  "scripts/_common.sh",
+  "scripts/hooks/",
+  ".githooks/",
+  ".github/workflows/",
+  "tests/vectors/",
+  "tests/negative/",
+]

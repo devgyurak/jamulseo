@@ -1,0 +1,1 @@
+../../.agents/workflows/adr.md

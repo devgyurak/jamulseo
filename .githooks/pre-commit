@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# 범용 폴백 게이트 — 훅이 없거나 약한 도구(codex, pi, cursor 일부)에서도 같은 검사를 건다.
+# .agents/COMPATIBILITY.md: "하나의 원천, 다섯 개의 어댑터, 하나의 게이트"
+set -uo pipefail
+unset CDPATH
+ROOT="$(git rev-parse --show-toplevel)" || exit 1
+cd "$ROOT" || exit 1
+
+R=$'\033[31m'; G=$'\033[32m'; Y=$'\033[33m'; D=$'\033[2m'; N=$'\033[0m'
+fail=0
+
+# ── 1. 보호 경로 — 변경 종류(A/M/D), HEAD 원문, 스테이지 내용을 판정에 넣는다 ──
+TMPD=$(mktemp -d "${TMPDIR:-/tmp}/jms-precommit.XXXXXX") || exit 1
+trap 'rm -rf "$TMPD"' EXIT
+
+git diff --cached --name-status --no-renames -z > "$TMPD/changes" || { printf '차단: 스테이지 변경 목록을 읽지 못했습니다.\n' >&2; exit 1; }
+
+rust=0; agents=0
+while IFS= read -r -d '' status; do
+  IFS= read -r -d '' file && [ -n "$file" ] || { printf '차단: 스테이지 변경 경로가 불완전합니다.\n' >&2; exit 1; }
+  case "$status" in
+    A) change=A ;; D) change=D ;; M|T) change=M ;;
+    *) printf '차단: 판정할 수 없는 변경 종류입니다: %s\n' "$status" >&2; exit 1 ;;
+  esac
+  case "$file" in *.rs|*Cargo.toml) [ "$change" = D ] || rust=1 ;; esac
+  case "$file" in .agents/*) agents=1 ;; esac
+
+  old="$TMPD/previous"
+  if [ "$change" = A ]; then : > "$old"
+  elif ! git show "HEAD:$file" > "$old"; then printf '차단: HEAD 내용을 읽지 못했습니다: %s\n' "$file" >&2; exit 1; fi
+  new=""
+  if [ "$change" != D ]; then
+    new="$TMPD/staged"
+    git show ":$file" > "$new" || { printf '차단: 스테이지 내용을 읽지 못했습니다: %s\n' "$file" >&2; exit 1; }
+  fi
+
+  if ! out=$(JMS_LOGICAL_PATH="$file" JMS_CHANGE="$change" JMS_OLD_CONTENT_FILE="$old" JMS_NEW_CONTENT_FILE="$new" \
+             ./scripts/hooks/guard-protected.sh "$file" 2>&1); then
+    # 사람의 승인 경로 (.agents/APPROVAL.md §승인 기록). 이 검사만 건너뛰고 commit-msg 가 트레일러를 요구한다.
+    if [ -n "${JMS_APPROVED_BY:-}" ]; then
+      printf '%s▲ 보호 경로 변경 (%s) %s — 승인자 %s 로 기록합니다%s\n' "$Y" "$change" "$file" "$JMS_APPROVED_BY" "$N"
+      continue
+    fi
+    printf '%s✗ 보호 경로 변경 (%s) — 사람 승인이 필요합니다%s\n\n%s\n\n' "$R" "$change" "$N" "$out"
+    printf '%s승인한 사람이 커밋: JMS_APPROVED_BY=<이름> git commit -s  (메시지에 Approved-by: <이름>)%s\n' "$D" "$N"
+    fail=1
+  fi
+done < "$TMPD/changes"
+
+# ── 2. Rust 변경이 있으면 빠른 검사 ─────────────────────────────
+if [ "$rust" -eq 1 ] && [ -f Cargo.toml ]; then
+  printf '%s▶ Rust 변경 — 빠른 검사%s\n' "$D" "$N"
+  run() { if "$2" >/dev/null 2>&1; then printf '%s  ✓ %s%s\n' "$G" "$1" "$N"; else printf '%s  ✗ %s — %s%s\n' "$R" "$1" "$2" "$N"; fail=1; fi; }
+  if cargo fmt --all -- --check >/dev/null 2>&1; then printf '%s  ✓ 포맷%s\n' "$G" "$N"
+  else printf '%s  ✗ 포맷 — cargo fmt --all%s\n' "$R" "$N"; fail=1; fi
+  run "GWT 네이밍"  ./scripts/lint-gwt.sh
+  run "assert 존재" ./scripts/lint-tests.sh
+  run "경계 규약"   ./scripts/lint-boundary.sh
+fi
+
+# ── 3. .agents/ 를 고쳤으면 어댑터 동기화 확인 ──────────────────
+if [ "$agents" -eq 1 ]; then
+  if ./scripts/sync-agents.sh --check >/dev/null 2>&1; then printf '%s  ✓ 어댑터 동기화%s\n' "$G" "$N"
+  else printf '%s  ✗ 어댑터 드리프트 — ./scripts/sync-agents.sh 실행 후 생성물도 함께 커밋%s\n' "$R" "$N"; fail=1; fi
+fi
+
+if [ "$fail" -ne 0 ]; then
+  printf '\n%s커밋 중단.%s 전체 게이트: ./scripts/verify.sh\n' "$R" "$N"
+  printf '%s임계값을 낮추거나 린트를 끄지 마세요 (AGENTS.md R4, R5).%s\n' "$D" "$N"
+  exit 1
+fi
+exit 0

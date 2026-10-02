@@ -1,0 +1,11 @@
+# 살아남아도 되는 뮤턴트 — **사람만 고친다** (scripts/hooks/protected.tsv). scripts/mutants_judge.py 가 읽는다.
+#
+# 테스트로 관측할 수 없는 변이(동치 뮤턴트, Drop 의 제로화처럼 정상 동작에 흔적이 없는 것)만 올린다.
+# "테스트 쓰기 어렵다"는 사유가 아니다. 관측 가능한데 테스트가 없으면 테스트를 쓴다.
+# 제로화처럼 테스트로 못 보는 것은 대신 무엇이 그것을 확인하는지(예: C4-03 어셈블리 감사)를 reason 에 적는다.
+#
+# [[exempt]]
+# crate = "jamulsoe-core"
+# mutant = "replace <impl Drop for RoundKeys>::drop with \\(\\)"   # 정규식, missed.txt 한 줄에서 :줄:열: 을 뺀 문자열에 search
+# reason = "Drop 제로화는 정상 출력에 흔적이 없다. C4-03 어셈블리 감사(docs/audits/...)가 확인한다"
+# approved_by = "devgyurak"

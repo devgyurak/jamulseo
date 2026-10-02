@@ -1,0 +1,55 @@
+# 보호 경로·DCO·승인 서명 판정 (.agents/APPROVAL.md §서버 측 강제). 이 파일은 판정 경로다 — 수정은 사람 승인.
+#
+# pull_request_target: 워크플로 파일과 체크아웃되는 스크립트가 **base 브랜치의 것**이다.
+# PR 이 판정기·이 워크플로·승인자 목록을 고쳐도 그 PR 의 판정에는 쓰이지 않는다.
+# PR 의 커밋은 git 객체로만 가져오고 **실행하지 않는다** (pull_request_target 의 알려진 위험을 피한다).
+# ⚠️ 공개 저장소에서 pull_request_target 은 2026-11-02 부터 기본 차단된다. 저장소 Actions 설정에서 이 이벤트를 허용해야 한다
+#    (docs.github.com/en/actions/reference/security/securely-using-pull_request_target — docs/research/2026-10-03.md §4).
+# 규칙셋에서 이 job 을 required status check 로 지정한다 (사람이 설정).
+name: protected
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, "kcmvp/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  protected-paths:
+    name: 보호 경로·DCO·승인 서명
+    runs-on: ubuntu-24.04
+    env:
+      ZERO: "0000000000000000000000000000000000000000"
+      PR: ${{ github.event.pull_request.number }}
+      BASE_SHA: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.base.sha || github.event.before }}
+      HEAD_SHA: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: base 체크아웃 (판정기는 base 의 것)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ (github.event_name == 'push' && github.event.before == '0000000000000000000000000000000000000000') && github.event.repository.default_branch || (github.event_name == 'pull_request_target' && github.event.pull_request.base.sha || github.event.before) }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: 검사 대상 커밋 가져오기 (객체만, 실행하지 않음)
+        run: |
+          if [ -n "$PR" ]; then git fetch --no-tags origin "+refs/pull/$PR/head:refs/remotes/pr/head"; fi
+          git fetch --no-tags origin "$HEAD_SHA" 2>/dev/null || true
+          git cat-file -e "$HEAD_SHA^{commit}"
+      - name: base 의 판정기로 검사
+        run: |
+          base="$BASE_SHA"
+          if [ "$base" = "$ZERO" ]; then
+            base=$(git merge-base "origin/${{ github.event.repository.default_branch }}" "$HEAD_SHA")
+          fi
+          if [ -n "$PR" ]; then
+            # 머지 결과를 직접 계산한다. refs/pull/N/merge 는 "경고 없이 낡을 수 있다" (GitHub REST 가이드).
+            # merge-tree·commit-tree 는 git 객체 연산이라 PR 코드를 실행하지 않는다. 충돌이면 실패한다 (fail-closed).
+            tree=$(git merge-tree --write-tree "$BASE_SHA" "$HEAD_SHA") || { echo "머지 충돌 — 해결한 뒤 다시"; exit 1; }
+            result=$(git -c user.name=ci -c user.email=ci@invalid commit-tree "$tree" -p "$BASE_SHA" -p "$HEAD_SHA" -m "test merge")
+            ./scripts/check-protected-diff.sh "$base" "$HEAD_SHA" "$result"   # 커밋별 + 순 변경(머지 결과)
+          else
+            ./scripts/check-protected-diff.sh "$base" "$HEAD_SHA"                         # 커밋별 + 순 변경(push 결과)
+          fi

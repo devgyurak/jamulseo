@@ -1,0 +1,46 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "AGENTS.md",
+    "docs/CONTRACTS.md",
+    ".agents/WORKFLOW.md"
+  ],
+  "permission": {
+    "edit": "allow",
+    "bash": {
+      "./scripts/*": "allow",
+      "cargo fmt*": "allow",
+      "cargo clippy*": "allow",
+      "cargo check*": "allow",
+      "cargo build*": "allow",
+      "cargo test*": "allow",
+      "cargo nextest*": "allow",
+      "cargo tree*": "allow",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow",
+      "git show*": "allow",
+      "cargo install*": "ask",
+      "cargo add*": "ask",
+      "cargo update*": "ask",
+      "rustup*": "ask",
+      "git commit*": "ask",
+      "git push*": "ask",
+      "git tag*": "ask",
+      "*--no-verify*": "deny",
+      "git push --force*": "deny",
+      "rm -rf*": "deny"
+    }
+  },
+  "agent": {
+    "build": {
+      "description": "기본 구현 에이전트. 작업 루프의 ③ IMPL 단계.",
+      "mode": "primary"
+    },
+    "plan": {
+      "description": "① SPEC 단계. 계획서에 없는 결정만 ADR 초안. 코드를 쓰지 않는다.",
+      "mode": "primary",
+      "tools": { "write": false, "edit": true, "bash": false }
+    }
+  }
+}

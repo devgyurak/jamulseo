@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/guard-protected.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/post-edit.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/stop-check.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(./scripts/check.sh:*)",
+      "Bash(./scripts/test.sh:*)",
+      "Bash(./scripts/verify.sh:*)",
+      "Bash(./scripts/lint-gwt.sh:*)",
+      "Bash(./scripts/lint-tests.sh:*)",
+      "Bash(./scripts/lint-boundary.sh:*)",
+      "Bash(./scripts/contract-check.sh:*)",
+      "Bash(./scripts/coverage.sh:*)",
+      "Bash(./scripts/mutants.sh:*)",
+      "Bash(./scripts/ct.sh:*)",
+      "Bash(./scripts/memsafety.sh:*)",
+      "Bash(./scripts/abi-check.sh:*)",
+      "Bash(./scripts/fuzz.sh:*)",
+      "Bash(./scripts/repro.sh:*)",
+      "Bash(./scripts/selftest-gates.sh:*)",
+      "Bash(./scripts/check-adapters.sh:*)",
+      "Bash(./scripts/sync-agents.sh:*)",
+      "Bash(./scripts/spec-bundle.sh:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo build:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo nextest:*)",
+      "Bash(cargo tree:*)",
+      "Bash(cargo doc:*)",
+      "Bash(cargo asm:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(rg:*)",
+      "Read(./**)"
+    ],
+    "ask": [
+      "Bash(./scripts/bootstrap.sh:*)",
+      "Bash(cargo install:*)",
+      "Bash(cargo add:*)",
+      "Bash(cargo update:*)",
+      "Bash(rustup:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git tag:*)",
+      "Bash(git config:*)",
+      "WebFetch"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/*.key)",
+      "Read(./**/*.pem)",
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git commit --no-verify:*)",
+      "Bash(git push --no-verify:*)",
+      "Bash(git -c core.hooksPath:*)",
+      "Edit(./docs/PLAN.md)",
+      "Edit(./docs/CONTRACTS.md)",
+      "Edit(./docs/kcmvp/inquiries.md)",
+      "Edit(./exports.txt)",
+      "Edit(./include/jamulsoe.h)",
+      "Edit(./rust-toolchain.toml)",
+      "Edit(./build/baseline.toml)",
+      "Edit(./tests/mutants/exempt.toml)",
+      "Edit(./AGENTS.md)",
+      "Edit(./CLAUDE.md)",
+      "Edit(./.agents/**)",
+      "Edit(./scripts/**)",
+      "Edit(./.githooks/**)",
+      "Edit(./.github/**)",
+      "Edit(./.claude/settings.json)",
+      "Edit(./.claude/settings.local.json)",
+      "Edit(./.claude/hooks/**)",
+      "Edit(./.cursor/hooks.json)",
+      "Edit(./.cursor/hooks/**)",
+      "Edit(./.opencode/opencode.json)",
+      "Edit(./.opencode/plugin/**)",
+      "Edit(./.codex/config.toml)",
+      "Edit(./.pi/config.toml)",
+      "Edit(./.claude/agents/**)",
+      "Edit(./.claude/rules/**)",
+      "Edit(./.claude/commands/**)",
+      "Edit(./.codex/agents/**)",
+      "Edit(./.opencode/agent/**)",
+      "Edit(./.opencode/command/**)",
+      "Edit(./.cursor/rules/**)",
+      "Edit(./.cursor/commands/**)",
+      "Edit(./docs/audits/attested/**)"
+    ]
+  },
+  "env": {
+    "RUST_BACKTRACE": "1",
+    "CARGO_TERM_COLOR": "always"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      { "command": "./.cursor/hooks/guard-shell.sh" }
+    ],
+    "beforeFileEdit": [
+      { "command": "./.cursor/hooks/guard-edit.sh" }
+    ],
+    "afterFileEdit": [
+      { "command": "./.cursor/hooks/post-edit.sh" }
+    ],
+    "beforeSubmitPrompt": [
+      { "command": "./.cursor/hooks/context.sh" }
+    ]
+  },
+  "_note": "Cursor 의 훅 이벤트 이름은 버전에 따라 다를 수 있습니다. 동작하지 않으면 .githooks/ 에 의존해도 됩니다 — 진짜 게이트는 ./scripts/verify.sh 와 CI 입니다 (.agents/COMPATIBILITY.md)."
+}

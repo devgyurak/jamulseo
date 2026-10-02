@@ -1,0 +1,31 @@
+# 툴체인·빌드·CPU 기준선 — 형상 (docs/CONTRACTS.md C5-10). **사람만 고친다** (scripts/hooks/protected.tsv).
+#
+# 빈 값("")은 "아직 정하지 않음"이다. scripts/lint_boundary.py 가 빈 값을 실패로 보고하므로,
+# M0 종료 전에 사람이 정해야 한다. 값은 보안정책문서·형상관리문서와 같아야 한다.
+# 이 값을 바꾸면 상수 시간 검사(C1-07~09)와 어셈블리 감사를 다시 해야 한다.
+
+[toolchain]
+rust = ""                               # rust-toolchain.toml 의 channel 과 같아야 한다. 예: "1.98.1"
+nightly = ""                            # Miri·ASan·cargo-fuzz 용 (검증 바이너리와 무관). 예: "nightly-2026-09-30"
+target = "x86_64-unknown-linux-gnu"     # 계획서 §1차 검증 범위
+
+[cpu]
+target_cpu = ""                         # -C target-cpu 값. .cargo/config.toml 의 target rustflags 와 같아야 한다. 예: "x86-64-v2"
+ct_host_model = ""                      # dudect 기준 장비의 /proc/cpuinfo "model name" (C1-08)
+
+[profile.release]                       # 워크스페이스 Cargo.toml 의 [profile.release] 와 같아야 한다
+panic = "abort"                         # 계획서 §C ABI 설계 > 패닉
+lto = ""                                # 예: "fat"
+codegen-units = ""                      # 예: 1  (정하면 정수로)
+strip = ""                              # 예: "symbols"
+opt-level = ""                          # 예: 3
+
+[tools]
+# cargo install --locked --version 으로 설치한다 (bootstrap.sh, CI).
+# 값은 2026-10-02 crates.io 의 최신 안정판이다 — 사람이 확정한다.
+cargo-nextest = "0.9.146"
+cargo-llvm-cov = "0.9.1"
+cargo-mutants = "27.1.0"
+cargo-fuzz = "0.13.2"
+cbindgen = "0.29.4"
+cargo-show-asm = "0.2.63"

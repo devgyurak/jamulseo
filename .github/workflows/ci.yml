@@ -1,0 +1,42 @@
+# 게이트 — 머지 판정 (JMS_REQUIRE_ALL=1: "실행 불가"도 실패). 이 파일은 판정 경로다 — 수정은 사람 승인.
+# 보호 경로 판정은 protected.yml (base 의 판정기) 이 한다. 이 job 은 PR 의 코드를 실행하므로 판정 근거로 쓰지 않는다.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main, "kcmvp/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: 게이트 (검증 대상 환경)
+    runs-on: ubuntu-24.04
+    env:
+      JMS_REQUIRE_ALL: "1"
+      JMS_DIFF_BASE: ${{ github.event.pull_request.base.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: cargo 도구 캐시 (버전은 build/baseline.toml [tools])
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cargo/bin
+          key: cargo-tools-${{ hashFiles('build/baseline.toml', 'rust-toolchain.toml') }}
+      - name: 도구
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q valgrind
+          ./scripts/bootstrap.sh
+      - name: verify (현재 마일스톤)
+        run: ./scripts/verify.sh
+
+  # M4 부터: 서로 다른 두 러너에서 빌드해 SHA-256 비교 (C5-11).
+  # 다이제스트로 고정한 컨테이너 이미지를 정한 뒤 활성화한다 (build-engineer 초안 → 사람 승인).

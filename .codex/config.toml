@@ -1,0 +1,70 @@
+# Codex 설정 — jamulsoe
+#
+# Codex 는 루트 AGENTS.md 를 자동으로 읽는다. 서브에이전트는 .codex/agents/*.toml (생성물).
+# 이 파일은 기본값과 직접 실행용 프로필만 담는다. 규칙을 여기 복제하지 않는다 (.agents/COMPATIBILITY.md).
+#
+#   codex --profile impl-core
+#   codex --profile review      ← 반드시 새 세션으로 (R3)
+
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+network_access = false          # 의존성·자료 확보는 사람이 승인한 뒤에
+
+# ── ① SPEC ──────────────────────────────────────────────────────────
+[profiles.spec]
+model_reasoning_effort = "high"
+# 역할: .agents/roles/spec-author.md
+
+[profiles.redteam]
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+# 역할: .agents/roles/spec-redteam.md — 구현 코드를 읽지 않는다. 새 세션, spec-bundle 만.
+
+# ── ② HARNESS ───────────────────────────────────────────────────────
+[profiles.harness]
+model_reasoning_effort = "high"
+# 역할: .agents/roles/harness-engineer.md
+
+[profiles.oracle]
+model_reasoning_effort = "high"
+# 역할: .agents/roles/oracle-author.md — 경계 크레이트 구현을 읽지 않는다. 새 세션.
+
+# ── ③ IMPL ──────────────────────────────────────────────────────────
+[profiles.impl-core]
+model_reasoning_effort = "high"
+# 역할: .agents/roles/core-engineer.md · 규칙: .agents/rules/crypto-core.md
+
+[profiles.impl-module]
+model_reasoning_effort = "high"
+# 역할: .agents/roles/module-engineer.md · 규칙: .agents/rules/module.md (G1 이후)
+
+[profiles.impl-ffi]
+model_reasoning_effort = "high"
+# 역할: .agents/roles/ffi-engineer.md · 규칙: .agents/rules/ffi.md (G1 이후)
+
+[profiles.build]
+model_reasoning_effort = "high"
+# 역할: .agents/roles/build-engineer.md · 규칙: .agents/rules/build.md
+
+# ── ⑤ REVIEW ────────────────────────────────────────────────────────
+[profiles.review]
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+# 역할: .agents/roles/rust-reviewer.md — R3, 구현 세션과 분리
+
+[profiles.audit]
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+# 역할: .agents/roles/contract-auditor.md — R3
+
+[profiles.ct-audit]
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+# 역할: .agents/roles/ct-auditor.md — R3. 어셈블리 덤프는 ./scripts/ct.sh --asm (target/ 에만 쓴다)
+
+# ── ⑥ RECORD ────────────────────────────────────────────────────────
+[profiles.kcmvp]
+model_reasoning_effort = "high"
+# 역할: .agents/roles/kcmvp-writer.md
