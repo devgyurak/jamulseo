@@ -1,0 +1,34 @@
+/target
+**/*.rs.bk
+
+# 퍼징 산출물 (재현 입력은 tests/negative/ 로 옮겨 커밋한다)
+/fuzz/target
+/fuzz/corpus
+/fuzz/artifacts
+
+# cargo-mutants
+mutants.out*/
+
+# 파이썬 캐시 (게이트 스크립트 부산물)
+__pycache__/
+*.pyc
+
+# 로컬
+.DS_Store
+*.swp
+.env
+.env.*
+*.key
+*.pem
+
+# 도구 로컬 설정 (공유 설정은 커밋한다)
+# 전역 gitignore 가 .claude/ 를 무시해도 이 저장소의 공유 설정(settings.json·hooks·agents·rules·commands)은 커밋한다
+!.claude/
+.claude/settings.local.json
+.cursor/local.json
+
+# ⚠️ 아래는 반드시 커밋한다 — 무시하지 말 것
+# proptest-regressions/  tests/vectors/  tests/negative/
+
+# 재배포 불가 표준 원문 (KS X·TTAK 등) — 해시만 docs/standards/SOURCES.md 에 기록
+/docs/standards/local/
