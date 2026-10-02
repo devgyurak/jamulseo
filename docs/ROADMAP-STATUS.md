@@ -14,8 +14,8 @@
 **종료 조건**: 하네스가 **스스로 검증**되고(오라클이 정답 벡터를 통과하고, 벡터 러너·상수 시간 하네스가 일부러 틀린 대상을 잡는다),
 게이트 0~6·8 이 동작하며, CI 가 초록이다.
 
-> 구현을 겨냥한 실패 테스트는 M0 에 main 으로 들어가지 않는다. 그것은 M1 의 각 PR 에서 **구현 커밋보다 먼저 오는 테스트 커밋**으로
-> 들어간다 (`.agents/WORKFLOW.md` ② "하네스와 구현은 같은 PR"). main 에 빨간 테스트를 두면 M1 의 모든 PR 이 마지막 알고리즘이
+> 구현을 겨냥한 실패 테스트는 M0 에 `develop` 으로 들어가지 않는다. 그것은 M1 의 각 PR 에서 **구현 커밋보다 먼저 오는 테스트 커밋**으로
+> 들어간다 (`.agents/WORKFLOW.md` ② "하네스와 구현은 같은 PR"). `develop` 에 빨간 테스트를 두면 M1 의 모든 PR 이 마지막 알고리즘이
 > 구현될 때까지 게이트 6·7 에서 실패한다. "하네스가 구현보다 먼저 존재한다"는 목적은 M0 의 오라클·러너 자기 검증으로 충족된다.
 
 ### M0 체크리스트
@@ -65,8 +65,9 @@
 - [ ] 셸로 고친 보호 파일 diff 검토, `docs/PLAN.md` 를 원본과 대조
 - [ ] 서명 키 두 개: 일상 키(소프트웨어) + 승인 키(하드웨어 `ed25519-sk`, `brew install openssh` 필요). 둘 다 GitHub Signing Key 로 등록, 승인 키만 `.github/allowed_signers` 에 (§4.3)
 - [ ] dev@devgyurak.com 이 devgyurak 계정의 확인된 이메일인지 확인 (Verified 조건)
-- [ ] 서명된 첫 커밋 (`Approved-by: devgyurak`) → `git push -u origin main` → `./scripts/bootstrap.sh`
-- [ ] `./.github/rulesets/apply.sh` 로 확인 → `--apply` (머지 커밋만, 서명 필수, 필수 체크, 최신화. 첫 push **뒤에**)
+- [x] 첫 push — `develop` (2026-10-03, 서명 없음. 승인 키가 생기면 보호 경로 커밋을 승인 키로 다시 서명해야 `main` 릴리스 PR 의 판정을 통과한다)
+- [ ] `./scripts/bootstrap.sh` (`core.hooksPath` 설정)
+- [ ] `./.github/rulesets/apply.sh` 로 확인 → `--apply` (기본 브랜치 develop, 머지 커밋만, `develop`·`kcmvp/**` 규칙셋. `main` 규칙셋은 첫 릴리스로 `main` 을 만든 뒤)
 
 **M0 안에**
 - [ ] `build/baseline.toml` 값 결정 — 제안: rust 1.99.0, nightly-2026-09-30, target_cpu x86-64, lto fat, codegen-units 1, strip symbols, opt-level 3 (§3)

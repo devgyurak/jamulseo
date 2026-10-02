@@ -4,13 +4,29 @@
 
 ## 브랜치
 
+```
+feat/… fix/… test/… docs/…  ──PR──►  develop (통합, 기본 브랜치)  ──릴리스 PR──►  main (릴리스)  ──►  서명 태그 vX.Y.Z
+                                         ▲                                         │
+                                         └──────── main 을 다시 머지 ◄── hotfix/* ──┘
+                                                                         검증 제출 태그 ──► kcmvp/v1 (동결)
+```
+
 | 브랜치 | 정책 | 강제 |
 |---|---|---|
-| 작업 브랜치 (`feat/…`, `fix/…`, `test/…`, `docs/…`) | 에이전트·사람이 작업. `main` 으로 PR | — |
-| `main` | 일반 개발. 보호 규칙: 리뷰 필수(코드 오너), **서명 커밋**, CI 통과, force push 금지 | GitHub 규칙셋 (사람이 설정) |
-| `kcmvp/v1` | 검증 제출 버전 **동결**. 변경은 곧 재검증 사유 | `.githooks/pre-push` 가 `JMS_APPROVED_BY` 없는 push 를 거부 + 규칙셋 |
+| 작업 브랜치 (`feat/…`, `fix/…`, `test/…`, `docs/…`) | 에이전트·사람이 작업. **`develop` 으로 PR** | — |
+| `develop` | **통합 브랜치**, 저장소 기본 브랜치. PR 필수, 머지 커밋만, 서명 필수, 필수 체크 2개, 머지 전 최신화, force push·삭제 금지 | 규칙셋 `develop.json` |
+| `main` | **릴리스 브랜치.** `develop` 에서 오는 릴리스 PR 과 `hotfix/*` PR 만 받는다. 머지 뒤 서명 태그를 단다. 규칙은 `develop` 과 같다 | 규칙셋 `main.json` + PR 출처 검사(`protected.yml`) |
+| `hotfix/*` | `main` 에서 갈라 긴급 수정. `main` 으로 PR, 릴리스 뒤 `main` 을 `develop` 에 머지해 되돌려 넣는다 | — |
+| `kcmvp/v1` | 검증 제출 버전 **동결** (제출 태그에서 가른다). 변경은 곧 재검증 사유 | 규칙셋 `kcmvp.json` + `.githooks/pre-push` |
 
-에이전트는 `main`·`kcmvp/*` 에 직접 push 하지 않는다.
+에이전트는 `develop`·`main`·`kcmvp/*` 에 직접 push 하지 않는다. 작업 브랜치에서 PR 을 연다.
+
+### 릴리스 절차
+
+1. `develop` 이 릴리스할 상태다: CI 초록, 마일스톤 종료 판정(`verify.sh --milestone Mx`, 기준 장비) 통과, 감사 기록 유효
+2. `develop` → `main` **릴리스 PR** (머지 커밋). 본문에 버전, 변경 요약, 계약·ABI 영향
+3. 머지 뒤 `main` 의 머지 커밋에 **서명 태그** `vX.Y.Z` (사람). 릴리스 산출물을 첨부한다
+4. 검증 제출본이면 그 태그에서 `kcmvp/v1` 을 가른다
 
 ## 머지 방식 — 머지 커밋만
 
@@ -22,10 +38,10 @@ PR 은 **머지 커밋**으로만 들어간다. GitHub 규칙셋에서 스쿼시
 | 리베이스 | 커밋을 다시 만든다 — 같은 두 문제 |
 | **머지 커밋** | 승인된 커밋과 감사한 커밋이 그대로 남는다. 머지 커밋 자체는 모든 부모와 다른 파일만 판정한다 (`scripts/check-protected-diff.sh`) |
 
-PR 브랜치를 최신으로 맞출 때도 리베이스가 아니라 `main` 을 머지해 넣는다 (승인 서명이 있는 커밋을 다시 만들지 않기 위해).
+PR 브랜치를 최신으로 맞출 때도 리베이스가 아니라 대상 브랜치(`develop`)를 머지해 넣는다 (승인 서명이 있는 커밋을 다시 만들지 않기 위해).
 
 규칙셋에서 **머지 전 브랜치 최신화**를 요구한다. 보호 경로 판정은 PR 의 머지 결과(`refs/pull/N/merge`)로 순 변경을 보므로,
-base 가 그 뒤에 움직이면 판정이 낡는다. main 에 push 된 뒤의 판정(`protected.yml` push 이벤트)이 같은 검사를 한 번 더 한다.
+base 가 그 뒤에 움직이면 판정이 낡는다. `develop`·`main` 에 push 된 뒤의 판정(`protected.yml` push 이벤트)이 같은 검사를 한 번 더 한다.
 
 머지에서 한쪽 부모의 **옛 버전을 고르는 것**도 보호 경로 변경이다. 커밋별 검사에는 걸리지 않지만 순 변경 검사가 잡는다 —
 그 내용을 만든 승인·서명 커밋이 범위에 없으면 실패한다 (`scripts/check-protected-diff.sh`).
@@ -43,11 +59,11 @@ base 가 그 뒤에 움직이면 판정이 낡는다. main 에 push 된 뒤의 �
 
 ## GitHub 설정 적용
 
-`.github/rulesets/apply.sh` (사람이 실행 — 서명된 첫 커밋을 push 한 **뒤에**). Actions 의 `pull_request_target` 허용은 UI 에서 (2026-11-02 부터 기본 차단).
+`.github/rulesets/apply.sh` (사람이 실행). `develop` 규칙셋은 지금, `main` 규칙셋은 첫 릴리스로 `main` 을 만든 뒤에 건다. Actions 의 `pull_request_target` 허용은 UI 에서 (2026-11-02 부터 기본 차단).
 
 ## 버전·태그
 
-- `main` 은 SemVer (`v0.1.0`, …)
+- 릴리스는 `main` 에서만 나간다. SemVer (`v0.1.0`, …)
 - 검증 제출본: `v1.0.0-kcmvp` 형식의 **서명된 태그**
 - 태그 생성은 사람만 한다
 
@@ -70,7 +86,7 @@ base 가 그 뒤에 움직이면 판정이 낡는다. main 에 push 된 뒤의 �
 
 ## 보안 수정
 
-`main` 에 반영하고, 심각도에 따라 재검증 신청 여부를 **사람이** 판단한다.
+급하면 `hotfix/*` → `main`(릴리스) → `develop` 으로 되돌려 넣고, 아니면 일반 흐름(`develop` → 다음 릴리스)으로 간다. 심각도에 따라 재검증 신청 여부를 **사람이** 판단한다.
 `kcmvp/v1` 에 반영해야 하는 경우도 사람이 결정한다.
 
 ## 기여
