@@ -19,7 +19,7 @@ argument-hint: [--diff-base <ref>] [--only <파일>] [--milestone Mx]
 
 | 언제 | 범위 | 방법 |
 |---|---|---|
-| PR (`verify.sh`, CI) | **diff 에 걸친 뮤턴트만** | `--diff-base` (CI 는 `JMS_DIFF_BASE`=PR base, 로컬은 `origin/main` 과의 merge-base) → `cargo mutants --in-diff` |
+| PR (`verify.sh`, CI) | **diff 에 걸친 뮤턴트만** | `--diff-base` (CI 는 `JMS_DIFF_BASE`=PR base, 로컬은 `origin/develop` 과의 merge-base) → `cargo mutants --in-diff` |
 | 마일스톤 종료 (`verify.sh --milestone`) | 대상 크레이트 **전체** | diff 없이 |
 
 증분은 빠른 피드백일 뿐이다. 한 곳의 변경이 다른 곳의 테스트를 약하게 만들 수 있으므로 종료 판정은 전체로 한다.

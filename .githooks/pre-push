@@ -10,7 +10,7 @@ R=$'\033[31m'; Y=$'\033[33m'; D=$'\033[2m'; N=$'\033[0m'
 # stdin: <local ref> <local sha> <remote ref> <remote sha>
 protected_ref=0
 while read -r _lref _lsha rref _rsha; do
-  case "$rref" in refs/heads/main|refs/heads/kcmvp/*) protected_ref=1 ;; esac
+  case "$rref" in refs/heads/develop|refs/heads/main|refs/heads/kcmvp/*) protected_ref=1 ;; esac
   case "$rref" in
     refs/heads/kcmvp/*)
       if [ -z "${JMS_APPROVED_BY:-}" ]; then
@@ -18,8 +18,8 @@ while read -r _lref _lsha rref _rsha; do
         printf '%s  사람이 결정했다면: JMS_APPROVED_BY=<이름> git push%s\n' "$D" "$N" >&2
         exit 1
       fi ;;
-    refs/heads/main)
-      printf '%s▲ main 에 직접 push 합니다. 보통은 PR 로 들어가야 합니다 (docs/RELEASE.md).%s\n' "$Y" "$N" >&2 ;;
+    refs/heads/develop|refs/heads/main)
+      printf '%s▲ %s 에 직접 push 합니다. 보통은 PR 로 들어가야 합니다 (docs/RELEASE.md).%s\n' "$Y" "${rref#refs/heads/}" "$N" >&2 ;;
   esac
 done
 

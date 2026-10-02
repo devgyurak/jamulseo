@@ -27,7 +27,7 @@
 
 | # | 규칙 | 근거 |
 |---|---|---|
-| R1 | **하네스가 먼저, 구현은 나중.** 정답 벡터·실패 케이스·오라클로 된 **실패하는 테스트** 없이 알고리즘·모듈·FFI 코드를 쓰지 않는다. 하네스와 구현은 **같은 PR** 에 두고 테스트 커밋(`TEST:`)이 구현 커밋보다 먼저 온다. main 에는 초록만 들어간다 | 계획서 §테스트·검증 전략, `.agents/WORKFLOW.md` ② |
+| R1 | **하네스가 먼저, 구현은 나중.** 정답 벡터·실패 케이스·오라클로 된 **실패하는 테스트** 없이 알고리즘·모듈·FFI 코드를 쓰지 않는다. 하네스와 구현은 **같은 PR** 에 두고 테스트 커밋(`TEST:`)이 구현 커밋보다 먼저 온다. `develop` 에는 초록만 들어간다 | 계획서 §테스트·검증 전략, `.agents/WORKFLOW.md` ② |
 | R2 | **계약 C1~C5가 다른 모든 결정보다 상위.** 하위 설계가 충돌하면 계약이 이기고 하위 설계를 고친다 | `docs/CONTRACTS.md` |
 | R3 | **구현한 에이전트는 자기 코드를 리뷰하지 않는다.** 리뷰는 반드시 새로 띄운 다른 에이전트가 한다 | `.agents/INDEPENDENCE.md` |
 | R4 | **에이전트는 자기를 판정하는 것을 고칠 수 없다.** 계약·동결 계획서·공개 인터페이스·툴체인 기준선·`scripts/**`·에이전트 규약(`AGENTS.md`, `.agents/**`)·도구 훅 설정·CI 는 사람만, 정답 벡터·코퍼스·감사 기록은 추가만, 계약 레지스트리는 테스트 연결만, ADR 은 `제안` 만. 셸로 우회하지 않는다 | `scripts/hooks/protected.tsv`, `.agents/APPROVAL.md` |
@@ -229,7 +229,7 @@ M6  시험 대응 (kcmvp/v1 동결)
 | 커밋 타입 | `docs/COMMIT.md` | `ADD:` `FIX:` `REF:` `UPT:` `DEL:` `TEST:` `DOCS:` + `Signed-off-by:` |
 | 승인 경계 | `scripts/hooks/protected.tsv` (정의) · `.agents/APPROVAL.md` (설명) | 제안 ADR 은 가능, **채택 전환·보호 경로는 사람만**, 승인은 서명으로 |
 | 역할 독립성 | `.agents/INDEPENDENCE.md` | 새 세션 + 명세 전용 묶음. 린트는 마지막 그물 |
-| 브랜치 · 릴리스 | `docs/RELEASE.md` | 작업 브랜치 → `main` PR / `kcmvp/v1` 은 동결 / 서명 태그 |
+| 브랜치 · 릴리스 | `docs/RELEASE.md` | 작업 브랜치 → `develop`(통합) PR / 릴리스는 `develop` → `main` PR 뒤 서명 태그 / `kcmvp/v1` 동결 |
 
 놓치기 쉬운 것 셋:
 

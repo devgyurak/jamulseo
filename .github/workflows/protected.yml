@@ -12,7 +12,7 @@ on:
   pull_request_target:
     types: [opened, synchronize, reopened]
   push:
-    branches: [main, "kcmvp/**"]
+    branches: [develop, main, "kcmvp/**"]
 
 permissions:
   contents: read
@@ -26,7 +26,16 @@ jobs:
       PR: ${{ github.event.pull_request.number }}
       BASE_SHA: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.base.sha || github.event.before }}
       HEAD_SHA: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
+      PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+      PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
     steps:
+      - name: 릴리스 브랜치 PR 출처 (main 은 develop·hotfix/* 에서만 — docs/RELEASE.md)
+        if: github.event_name == 'pull_request_target' && github.event.pull_request.base.ref == 'main'
+        run: |
+          # 이벤트 데이터만 비교한다 (PR 코드를 쓰지 않는다). 포크의 같은 이름 브랜치는 인정하지 않는다.
+          if [ "$PR_HEAD_REPO" != "${{ github.repository }}" ]; then echo "main 으로의 PR 은 이 저장소의 브랜치에서만"; exit 1; fi
+          case "$PR_HEAD_REF" in develop|hotfix/*) echo "출처 확인: $PR_HEAD_REF" ;; *) echo "main 은 develop 또는 hotfix/* 에서만 받습니다 (현재: $PR_HEAD_REF)"; exit 1 ;; esac
       - name: base 체크아웃 (판정기는 base 의 것)
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:

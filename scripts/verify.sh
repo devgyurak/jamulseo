@@ -8,7 +8,7 @@
 #   ./scripts/verify.sh --milestone M1   그 마일스톤의 **종료 조건**으로 판정 (뮤테이션 전체, dudect 기준 장비 포함)
 #
 # 환경: JMS_REQUIRE_ALL=1 (CI·종료 판정) — "실행 불가"도 실패
-#       JMS_DIFF_BASE=<ref> — 뮤테이션 증분 기준 (없으면 origin/main 과의 merge-base, 그것도 없으면 전체)
+#       JMS_DIFF_BASE=<ref> — 뮤테이션 증분 기준 (없으면 origin/develop 과의 merge-base, 그것도 없으면 전체)
 #       JMS_CT_BASELINE_HOST=1 — 이 장비가 dudect 기준 장비임을 선언 (ct.sh 가 CPU 모델로 다시 확인)
 #
 # 판정 상태: 통과 / 실패 / 미적용(마일스톤 이전) / 실행 불가(검증 대상 환경 아님)
@@ -102,7 +102,7 @@ else
   fi
   diff_base=""
   if [ "$MS_EXIT" = 0 ]; then
-    diff_base="${JMS_DIFF_BASE:-$(git merge-base HEAD origin/main 2>/dev/null || true)}"
+    diff_base="${JMS_DIFF_BASE:-$(git merge-base HEAD origin/develop 2>/dev/null || true)}"
   fi
   gate 9  "뮤테이션${diff_base:+ (증분)}" M1 ws "$ROOT/scripts/mutants.sh" --milestone "$MS" ${diff_base:+--diff-base "$diff_base"}
   gate 10 "Miri + ASan"       M3 target "$ROOT/scripts/memsafety.sh"
