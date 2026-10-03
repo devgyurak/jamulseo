@@ -1,0 +1,9 @@
+[package]
+name = "jamulsoe-core"
+description = "jamulsoe 알고리즘 코어 (모듈 경계 안): ARIA, GCM, SHA-256, HMAC-SHA-256"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true

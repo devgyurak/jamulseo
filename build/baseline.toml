@@ -1,24 +1,24 @@
 # 툴체인·빌드·CPU 기준선 — 형상 (docs/CONTRACTS.md C5-10). **사람만 고친다** (scripts/hooks/protected.tsv).
 #
-# 빈 값("")은 "아직 정하지 않음"이다. scripts/lint_boundary.py 가 빈 값을 실패로 보고하므로,
+# 2026-10-03 devgyurak 확정 (근거: docs/research/2026-10-03.md §3). 빈 값("")은 "아직 정하지 않음"이다. scripts/lint_boundary.py 가 빈 값을 실패로 보고하므로,
 # M0 종료 전에 사람이 정해야 한다. 값은 보안정책문서·형상관리문서와 같아야 한다.
 # 이 값을 바꾸면 상수 시간 검사(C1-07~09)와 어셈블리 감사를 다시 해야 한다.
 
 [toolchain]
-rust = ""                               # rust-toolchain.toml 의 channel 과 같아야 한다. 예: "1.98.1"
-nightly = ""                            # Miri·ASan·cargo-fuzz 용 (검증 바이너리와 무관). 예: "nightly-2026-09-30"
+rust = "1.99.0"                         # rust-toolchain.toml 의 channel 과 같아야 한다. 2026-10-01 stable
+nightly = "nightly-2026-09-30"          # Miri·ASan·cargo-fuzz 용 (검증 바이너리와 무관). Miri 비밀값 노출 수정(09-22) 이후
 target = "x86_64-unknown-linux-gnu"     # 계획서 §1차 검증 범위
 
 [cpu]
-target_cpu = ""                         # -C target-cpu 값. .cargo/config.toml 의 target rustflags 와 같아야 한다. 예: "x86-64-v2"
+target_cpu = "x86-64"                   # -C target-cpu 값 (v1). Ubuntu 24.04 공식 기준선. .cargo/config.toml 과 같아야 한다
 ct_host_model = ""                      # dudect 기준 장비의 /proc/cpuinfo "model name" (C1-08)
 
 [profile.release]                       # 워크스페이스 Cargo.toml 의 [profile.release] 와 같아야 한다
 panic = "abort"                         # 계획서 §C ABI 설계 > 패닉
-lto = ""                                # 예: "fat"
-codegen-units = ""                      # 예: 1  (정하면 정수로)
-strip = ""                              # 예: "symbols"
-opt-level = ""                          # 예: 3
+lto = "fat"
+codegen-units = 1
+strip = "symbols"                       # 감사용 [profile.audit] 은 strip = "none"
+opt-level = 3
 
 [tools]
 # cargo install --locked --version 으로 설치한다 (bootstrap.sh, CI).

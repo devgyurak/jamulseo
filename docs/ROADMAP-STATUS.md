@@ -22,11 +22,11 @@
 
 - [ ] 에이전트 워크플로우 (`AGENTS.md`, `.agents/`, 어댑터, 훅, `.githooks/`)
 - [ ] `./scripts/bootstrap.sh` 실행, `./scripts/selftest-gates.sh` 통과
-- [ ] 워크스페이스: `crates/jamulsoe-{core,module,ffi}` 골격 + `jamulsoe-oracle`·`jamulsoe-ct` (경계 밖)
-- [ ] **기준선 결정 (사람)**: `build/baseline.toml` 의 rust·nightly·target_cpu·ct_host_model·프로파일 값 → `rust-toolchain.toml`, `.cargo/config.toml`, 워크스페이스 `[profile.release]` 를 그 값으로
+- [x] 워크스페이스: `crates/jamulsoe-{core,module,ffi}` 골격 + `jamulsoe-oracle`·`jamulsoe-ct` (경계 밖) — 2026-10-03, 구현 없음
+- [x] **기준선 결정 (사람)**: rust 1.99.0, nightly-2026-09-30, target_cpu x86-64, lto fat, codegen-units 1, strip symbols, opt-level 3 — 2026-10-03 devgyurak 확정, `rust-toolchain.toml`·`.cargo/config.toml`·`[profile.release]` 반영 (`ct_host_model` 은 기준 장비를 정한 뒤)
 - [ ] **승인 체계 (사람)**: `.github/APPROVERS`, `.github/allowed_signers`(하드웨어 키 권장), GitHub 규칙셋 — `protected` job 을 required check 로, 서명 커밋, 코드 오너 리뷰, **머지 커밋만 허용(스쿼시·리베이스 끔)** (`docs/RELEASE.md`), **머지 전 브랜치 최신화 요구**(순 변경 판정이 낡은 머지 결과로 통과하지 않게 — push 판정이 사후에 한 번 더 본다)
 - [ ] `./scripts/bootstrap.sh` 로 `core.hooksPath` 설정 (첫 커밋 **뒤에**)
-- [ ] `./scripts/lint-boundary.sh` 통과 (C5-01~04, C5-07)
+- [x] `./scripts/lint-boundary.sh` 통과 (C5-01~04, C5-07, C5-10)
 - [ ] `tests/vectors/`: RFC 5794, RFC 4231, NIST CAVP SHA-256 원본 + `SOURCES.md`
 - [ ] KISA 검증대상 알고리즘 테스트 벡터 확보 (사람) → 추가
 - [ ] 벡터 러너 자기 검증: 오라클로 정답 벡터를 통과하고, 기대값 한 바이트를 바꾼 사본으로는 **기대값 불일치로** 실패한다 (러너가 실제로 비교함)
@@ -63,14 +63,20 @@
 
 **첫 커밋 전후**
 - [ ] 셸로 고친 보호 파일 diff 검토, `docs/PLAN.md` 를 원본과 대조
-- [ ] 서명 키 두 개: 일상 키(소프트웨어) + 승인 키(하드웨어 `ed25519-sk`, `brew install openssh` 필요). 둘 다 GitHub Signing Key 로 등록, 승인 키만 `.github/allowed_signers` 에 (§4.3)
+- [ ] **승인 체계 부트스트랩 (사람, 한 번만)** — PR #1 리뷰 [P2]-2. 승인자 목록을 채우는 변경도 보호 경로라 어떤 PR 로도 들어갈 수 없으므로, **관리자 직접 push 를 이번 한 번만** 쓴다
+  1. 키 두 개: 일상 키(소프트웨어) + 승인 키(하드웨어 `ed25519-sk`, `brew install openssh`). 둘 다 GitHub Signing Key 로 등록, dev@devgyurak.com 이 확인된 이메일인지 확인 (`docs/research/2026-10-03.md` §4.3)
+  2. 이 클론에서: `git config --local gpg.format ssh` · `git config --local user.signingkey ~/.ssh/<일상 키>.pub` · `git config --local commit.gpgsign true`
+  3. `develop` 에서 `.github/allowed_signers` 에 승인 키 한 줄만 추가해 커밋 — `JMS_APPROVED_BY=devgyurak git -c user.signingkey=~/.ssh/<승인 키>.pub commit -s -S` (메시지에 `Approved-by: devgyurak`) → `git push origin develop`
+  4. 아래 갱신 로그에 그 커밋 해시와 "승인 체계 부트스트랩 — 관리자 직접 push, 다시 없음" 을 남긴다 (이 커밋의 push 판정은 base 의 서명자 목록이 비어 있어 실패한다 — 그것이 기록이다)
+  5. PR #1 브랜치를 새 `develop` 위로 옮기며 커밋을 다시 서명: `git checkout build/m0-workspace && git -c user.signingkey=~/.ssh/<승인 키>.pub rebase develop --exec 'git commit --amend --no-edit -S'` → `git push --force-with-lease` (커밋마다 키 터치. 승인 서명 전의 커밋이라 리베이스로 다시 만드는 예외를 이번에만 쓴다)
+  6. 그 뒤로는 우회 없음 — `./.github/rulesets/apply.sh --apply`
 - [ ] dev@devgyurak.com 이 devgyurak 계정의 확인된 이메일인지 확인 (Verified 조건)
 - [x] 첫 push — `develop` (2026-10-03, 서명 없음. 승인 키가 생기면 보호 경로 커밋을 승인 키로 다시 서명해야 `main` 릴리스 PR 의 판정을 통과한다)
 - [ ] `./scripts/bootstrap.sh` (`core.hooksPath` 설정)
 - [ ] `./.github/rulesets/apply.sh` 로 확인 → `--apply` (기본 브랜치 develop, 머지 커밋만, `develop`·`kcmvp/**` 규칙셋. `main` 규칙셋은 첫 릴리스로 `main` 을 만든 뒤)
 
 **M0 안에**
-- [ ] `build/baseline.toml` 값 결정 — 제안: rust 1.99.0, nightly-2026-09-30, target_cpu x86-64, lto fat, codegen-units 1, strip symbols, opt-level 3 (§3)
+- [x] `build/baseline.toml` 값 결정 (2026-10-03)
 - [ ] dudect 기준 장비 마련 (터보·SMT 끄기 등 §3) → `ct_host_model`
 - [ ] 표준 원문: KS X 3254·3275 (국립전파연구원 무료), KS X 1213-1 (KSSN 23,100원 또는 e-나라 무료 열람) → `docs/standards/local/` + 해시 (§2)
 - [ ] KISA 자료 내려받기: 제출물 작성 안내서 2025.9., GVI Part 1·2, 테스트 벡터 zip(ARIA·SHA2·HMAC) — 벡터는 재배포 조건 확인 전까지 로컬에만 (§1.3·1.4)
@@ -125,3 +131,6 @@
 | 날짜 | 변경 |
 |---|---|
 | 2026-10-02 | M0 시작. 계획서 동결본(`docs/PLAN.md`) 기준으로 에이전트 워크플로우 구축 |
+| 2026-10-03 | 기준선 확정, 워크스페이스 골격. 게이트 6(테스트 0개)은 M0 하네스(오라클·러너·상수 시간 하네스 자기 검증)가 들어올 때까지 실패가 정상 |
+| 2026-10-03 | PR #1 교차 리뷰(Fable 5.1 세션, 구현 이력 없음): [P1] 0 / [P2] 3 / [P3] 3. [P2]-1·[P3] 반영. [P2]-2 는 위 승인 체계 부트스트랩(사람). [P2]-3: 게이트 6 이 빨간 채로 머지하지 않는다 — M0 하네스 PR 을 PR #1 위에 쌓아 함께 들인다 |
+| — | (승인 체계 부트스트랩 커밋 해시를 여기에 — 사람) |

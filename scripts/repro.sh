@@ -5,6 +5,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 need cargo
 has_crate jamulsoe-ffi || die "jamulsoe-ffi 가 없습니다."
 is_target_platform || die "검증 대상 바이너리는 Linux x86_64 ELF 입니다."
+need_base_rustflags
 
 epoch="${SOURCE_DATE_EPOCH:-$(git log -1 --format=%ct 2>/dev/null || echo 0)}"
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/jms-repro.XXXXXX"); trap 'rm -rf "$tmp"' EXIT
@@ -14,7 +15,7 @@ build_in() {  # build_in <디렉터리>
   mkdir -p "$dir"
   git ls-files -z | (cd "$ROOT" && xargs -0 tar cf -) | (cd "$dir" && tar xf -)
   (cd "$dir" && SOURCE_DATE_EPOCH="$epoch" \
-     RUSTFLAGS="--remap-path-prefix=$dir=/build --remap-path-prefix=${CARGO_HOME:-$HOME/.cargo}=/cargo" \
+     RUSTFLAGS="$BASE_RUSTFLAGS --remap-path-prefix=$dir=/build --remap-path-prefix=${CARGO_HOME:-$HOME/.cargo}=/cargo" \
      cargo build --locked --release -p jamulsoe-ffi --target "$TARGET_TRIPLE" >/dev/null 2>&1) || return 1
   sha256sum "$dir/target/$TARGET_TRIPLE/release/libjamulsoe.so" | awk '{print $1}'
 }

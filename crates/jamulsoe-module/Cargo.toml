@@ -1,0 +1,12 @@
+[package]
+name = "jamulsoe-module"
+description = "jamulsoe 모듈 계층 (모듈 경계 안): 상태머신, 자가시험, 무결성 시험, CSP 제로화"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+jamulsoe-core = { path = "../jamulsoe-core" }

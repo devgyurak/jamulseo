@@ -1,0 +1,7 @@
+# 툴체인 기준선 — 형상 (docs/CONTRACTS.md C5-10). 사람만 고친다. build/baseline.toml [toolchain].rust 와 같아야 한다.
+# 바꾸면 상수 시간 검사(C1-07~09)와 어셈블리 감사를 다시 해야 한다.
+[toolchain]
+channel = "1.99.0"
+profile = "minimal"
+components = ["rustfmt", "clippy", "llvm-tools-preview"]
+targets = ["x86_64-unknown-linux-gnu"]

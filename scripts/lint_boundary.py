@@ -14,11 +14,14 @@
        rust-toolchain.toml channel = [toolchain].rust
        워크스페이스 [profile.release] 의 각 키 = [profile.release]
        .cargo/config.toml 의 [target.<target>].rustflags 의 target-cpu = [cpu].target_cpu
-  7. target-cpu=native 가 빌드 설정 어디에도 없음
+  7. target-cpu=native 가 빌드 설정 어디에도 없음 (TOML 은 파싱한 값으로)
+  8. rustflags 는 루트 .cargo/config.toml 의 [target.<target>] 에만 — [build]·[env]·다른 target·하위 .cargo/config* 금지
+  9. [profile.audit] = release 상속 + strip 만 (어셈블리 감사가 공식 바이너리와 같은 코드를 보도록)
 """
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from pathlib import Path
@@ -88,7 +91,17 @@ def check_baseline(root: Path, wsm: dict | None) -> None:
         cfg = root / ".cargo" / "config.toml"
         flags = []
         if cfg.exists():
-            flags = load(cfg).get("target", {}).get(target, {}).get("rustflags", [])
+            conf = load(cfg)
+            flags = conf.get("target", {}).get(target, {}).get("rustflags", [])
+            # 기준선 대조는 [target.<target>].rustflags 만 본다. 다른 곳의 rustflags 는 그것보다 우선하거나 섞이므로 금지한다.
+            if "rustflags" in conf.get("build", {}) or "rustdocflags" in conf.get("build", {}):
+                err(".cargo/config.toml: [build].rustflags 금지 — [target.<target>].rustflags 를 덮어쓴다 (C5-10)")
+            for k in conf.get("env", {}):
+                if k.upper() in ("RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS", "RUSTDOCFLAGS"):
+                    err(f".cargo/config.toml: [env].{k} 금지 — 기준선 플래그를 대체한다 (C5-10)")
+            for tname, tdata in conf.get("target", {}).items():
+                if tname != target and isinstance(tdata, dict) and "rustflags" in tdata:
+                    err(f".cargo/config.toml: [target.{tname}].rustflags — 기준선 대조 밖의 rustflags 금지 (C5-10)")
         joined = " ".join(flags) if isinstance(flags, list) else str(flags)
         got = re.findall(r"target-cpu\s*=\s*([\w.-]+)", joined.replace('"', ""))
         if got != [str(want_cpu)]:
@@ -97,6 +110,12 @@ def check_baseline(root: Path, wsm: dict | None) -> None:
             oks.append(f"target-cpu {want_cpu} = 기준선")
 
     if wsm is not None:
+        # 어셈블리 감사 프로파일은 릴리스와 같은 코드여야 한다 — release 상속, strip 만 다를 수 있다
+        audit = wsm.get("profile", {}).get("audit")
+        if audit is None:
+            err("[profile.audit] 이 없습니다 — 어셈블리 감사(C1-09, C4-03)는 release 와 같은 코드의 심볼 있는 빌드가 필요하다")
+        elif audit.get("inherits") != "release" or set(audit) - {"inherits", "strip"}:
+            err(f"[profile.audit] 은 inherits = \"release\" 와 strip 만 둘 수 있습니다 (현재: {sorted(audit)}) — 감사 대상이 공식 바이너리와 달라진다")
         have = wsm.get("profile", {}).get("release", {})
         for k, v in base.get("profile", {}).get("release", {}).items():
             if unset(v):
@@ -105,11 +124,37 @@ def check_baseline(root: Path, wsm: dict | None) -> None:
                 err(f"[profile.release].{k} = {have.get(k)!r} ≠ 기준선 {v!r} (C5-04/C5-10)")
 
 
+def toml_strings(node) -> list[str]:
+    if isinstance(node, str):
+        return [node]
+    if isinstance(node, dict):
+        return [x for v in node.values() for x in toml_strings(v)]
+    if isinstance(node, list):
+        return [x for v in node for x in toml_strings(v)]
+    return []
+
+
 def check_native(root: Path) -> None:
-    cands = [root / ".cargo" / "config.toml", root / ".cargo" / "config", root / "Cargo.toml"]
-    cands += list((root / "crates").glob("*/Cargo.toml")) + list((root / "crates").glob("*/build.rs"))
-    for p in cands:
-        if p.exists() and "target-cpu=native" in p.read_text(encoding="utf-8", errors="replace").replace(" ", ""):
+    # 저장소 루트의 .cargo/config.toml 만 허용한다. 하위 디렉터리의 .cargo/config* 와 옛 이름 .cargo/config 는
+    # 그 디렉터리에서 빌드할 때 섞여 들어와 기준선 대조를 피한다.
+    # target/·.git/ 은 아예 내려가지 않는다 — 빌드 산출물이 쌓이면 게이트 5 가 느려진다
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if not (Path(dirpath) == root and d in ("target", ".git")) and d != "target"]
+        if Path(dirpath).name == ".cargo":
+            for fn in filenames:
+                p = Path(dirpath) / fn
+                if fn.startswith("config") and p != root / ".cargo" / "config.toml":
+                    err(f"{p.relative_to(root)}: 루트 .cargo/config.toml 밖의 cargo 설정 금지 (C5-10)")
+    tomls = [root / ".cargo" / "config.toml", root / "Cargo.toml"] + list((root / "crates").glob("*/Cargo.toml"))
+    for p in tomls:
+        if not p.exists():
+            continue
+        # TOML 은 파싱한 문자열 값만 본다 — 주석은 자연히 빠지고, 값 안의 '#' 에 잘리지 않는다
+        if any("target-cpu=native" in v.replace(" ", "") for v in toml_strings(load(p))):
+            err(f"{p.relative_to(root)}: target-cpu=native 금지 (C5-10)")
+    for p in (root / "crates").glob("*/build.rs"):
+        code = "\n".join(ln.split("//")[0] for ln in p.read_text(encoding="utf-8", errors="replace").splitlines())
+        if "target-cpu=native" in code.replace(" ", ""):
             err(f"{p.relative_to(root)}: target-cpu=native 금지 (C5-10)")
 
 

@@ -1,0 +1,9 @@
+[package]
+name = "jamulsoe-oracle"
+description = "jamulsoe 독립 참조 모델 (모듈 경계 밖, 테스트 오라클)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
