@@ -174,6 +174,7 @@ mk_ws; sub "$WS/build/baseline.toml" 'lto = "fat"' 'lto = ""'; expect 1 "기준�
 mk_ws; sub "$WS/rust-toolchain.toml" '1.98.1' 'stable'; expect 1 "툴체인이 기준선과 다름" lb
 mk_ws; sub "$WS/.cargo/config.toml" 'x86-64-v2' 'x86-64-v3'; expect 1 "target-cpu 가 기준선과 다름" lb
 mk_ws; sub "$WS/.cargo/config.toml" 'target-cpu=x86-64-v2' 'target-cpu=native'; expect 1 "target-cpu=native" lb
+mk_ws; printf '# target-cpu=native 는 쓰지 않는다\n' >> "$WS/.cargo/config.toml"; expect 0 "주석 속 target-cpu=native 는 위반 아님" lb
 mk_ws; sub "$WS/crates/jamulsoe-ffi/Cargo.toml" '"cdylib"' '"cdylib", "staticlib"'; expect 1 "staticlib" lb
 mk_ws; rm -rf "$WS/crates/jamulsoe-ffi"; expect 1 "경계 크레이트 누락" lb
 

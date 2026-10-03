@@ -109,7 +109,12 @@ def check_native(root: Path) -> None:
     cands = [root / ".cargo" / "config.toml", root / ".cargo" / "config", root / "Cargo.toml"]
     cands += list((root / "crates").glob("*/Cargo.toml")) + list((root / "crates").glob("*/build.rs"))
     for p in cands:
-        if p.exists() and "target-cpu=native" in p.read_text(encoding="utf-8", errors="replace").replace(" ", ""):
+        if not p.exists():
+            continue
+        # 주석은 뺀다 (TOML '#', Rust '//') — "native 를 쓰지 않는다" 는 설명이 위반으로 잡히지 않게
+        lines = p.read_text(encoding="utf-8", errors="replace").splitlines()
+        code = "\n".join(ln.split("//")[0] if p.suffix == ".rs" else ln.split("#")[0] for ln in lines)
+        if "target-cpu=native" in code.replace(" ", ""):
             err(f"{p.relative_to(root)}: target-cpu=native 금지 (C5-10)")
 
 
