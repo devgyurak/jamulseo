@@ -25,6 +25,17 @@ FUZZ_SECONDS=60                                   # 타깃당 스모크 시간
 # ── 검증 대상 환경 ───────────────────────────────────────────────────
 TARGET_TRIPLE=x86_64-unknown-linux-gnu
 
+# 기준선 CPU 플래그 (build/baseline.toml [cpu].target_cpu, C5-10).
+# RUSTFLAGS 환경변수는 .cargo/config.toml 의 [target.*].rustflags 를 **대체**한다. 그래서 RUSTFLAGS 를 직접 쓰는
+# 스크립트는 반드시 이것을 앞에 붙인다 — 안 그러면 재현 빌드·감사가 기준선과 다른 플래그로 돈다 (selftest 가 검사).
+BASE_RUSTFLAGS=$(python3 -c 'import sys,tomllib
+v=str(tomllib.load(open(sys.argv[1],"rb")).get("cpu",{}).get("target_cpu","")).strip()
+print(f"-C target-cpu={v}" if v else "")' "$ROOT/build/baseline.toml" 2>/dev/null || true)
+# 기준선 nightly (Miri·ASan·cargo-fuzz). "+nightly" 는 고정되지 않은 채널이라 쓰지 않는다 (selftest 가 검사).
+BASE_NIGHTLY=$(python3 -c 'import sys,tomllib; print(str(tomllib.load(open(sys.argv[1],"rb")).get("toolchain",{}).get("nightly","")).strip())' "$ROOT/build/baseline.toml" 2>/dev/null || true)
+need_base_nightly() { [ -n "$BASE_NIGHTLY" ] || die "기준선 미정: build/baseline.toml [toolchain].nightly"; }
+need_base_rustflags() { [ -n "$BASE_RUSTFLAGS" ] || die "기준선 미정: build/baseline.toml [cpu].target_cpu — RUSTFLAGS 를 기준선 없이 쓰지 않습니다"; }
+
 # ── 출력 ─────────────────────────────────────────────────────────────
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   R=$'\033[31m'; G=$'\033[32m'; Y=$'\033[33m'; B=$'\033[34m'; D=$'\033[2m'; N=$'\033[0m'

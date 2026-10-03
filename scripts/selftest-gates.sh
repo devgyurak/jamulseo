@@ -42,6 +42,14 @@ else ok "빈 배열 펼치기가 bash 3.2 에서 안전"; fi
 bad_comp=$(grep -nE -- '--component [A-Za-z0-9_-]+ [a-z]' "$ROOT"/scripts/*.sh 2>/dev/null | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' || true)
 if [ -n "$bad_comp" ]; then fail "rustup --component 가 공백으로 나열됨:"; printf '%s\n' "$bad_comp" | sed 's/^/        /'
 else ok "rustup --component 가 쉼표로 구분됨"; fi
+# RUSTFLAGS 환경변수는 .cargo/config.toml 의 기준선 CPU 플래그를 대체한다 — 직접 쓰는 곳은 $BASE_RUSTFLAGS 를 앞에 붙인다 (C5-10).
+bad_rf=$(grep -nE '(^|[^A-Z_])RUSTFLAGS=' "$ROOT"/scripts/*.sh 2>/dev/null | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' | grep -v 'BASE_RUSTFLAGS' || true)
+if [ -n "$bad_rf" ]; then fail "기준선 CPU 플래그 없이 RUSTFLAGS 를 덮어씀:"; printf '%s\n' "$bad_rf" | sed 's/^/        /'
+else ok "RUSTFLAGS 를 쓰는 곳은 기준선 CPU 플래그를 포함"; fi
+# "+nightly" 는 고정되지 않은 채널이다 — 기준선 nightly($BASE_NIGHTLY)를 쓴다.
+bad_nt=$(grep -nE 'cargo \+nightly( |$)' "$ROOT"/scripts/*.sh 2>/dev/null | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' || true)
+if [ -n "$bad_nt" ]; then fail "고정되지 않은 +nightly:"; printf '%s\n' "$bad_nt" | sed 's/^/        /'
+else ok "nightly 는 기준선 날짜로 고정"; fi
 
 # ── 1. 보호 경로 — 경로만으로 차단 (human) ─────────────────────────
 step "사람 승인 경로 (human)"
@@ -157,7 +165,7 @@ mk_ws() {
   printf '[toolchain]\nchannel = "1.98.1"\n' > "$WS/rust-toolchain.toml"
   printf '[toolchain]\nrust = "1.98.1"\ntarget = "x86_64-unknown-linux-gnu"\n[cpu]\ntarget_cpu = "x86-64-v2"\n[profile.release]\npanic = "abort"\nlto = "fat"\ncodegen-units = 1\n' > "$WS/build/baseline.toml"
   printf '[target.x86_64-unknown-linux-gnu]\nrustflags = ["-C", "target-cpu=x86-64-v2"]\n' > "$WS/.cargo/config.toml"
-  printf '[workspace]\nmembers = ["crates/*"]\n[profile.release]\npanic = "abort"\nlto = "fat"\ncodegen-units = 1\n' > "$WS/Cargo.toml"
+  printf '[workspace]\nmembers = ["crates/*"]\n[profile.release]\npanic = "abort"\nlto = "fat"\ncodegen-units = 1\n[profile.audit]\ninherits = "release"\nstrip = "none"\n' > "$WS/Cargo.toml"
   for c in core module ffi; do mkdir -p "$WS/crates/jamulsoe-$c/src"; done
   printf '#![no_std]\n#![forbid(unsafe_code)]\n' > "$WS/crates/jamulsoe-core/src/lib.rs"
   printf '#![forbid(unsafe_code)]\n' > "$WS/crates/jamulsoe-module/src/lib.rs"
@@ -180,6 +188,13 @@ mk_ws; sub "$WS/rust-toolchain.toml" '1.98.1' 'stable'; expect 1 "툴체인이 �
 mk_ws; sub "$WS/.cargo/config.toml" 'x86-64-v2' 'x86-64-v3'; expect 1 "target-cpu 가 기준선과 다름" lb
 mk_ws; sub "$WS/.cargo/config.toml" 'target-cpu=x86-64-v2' 'target-cpu=native'; expect 1 "target-cpu=native" lb
 mk_ws; printf '# target-cpu=native 는 쓰지 않는다\n' >> "$WS/.cargo/config.toml"; expect 0 "주석 속 target-cpu=native 는 위반 아님" lb
+mk_ws; sub "$WS/.cargo/config.toml" '"target-cpu=x86-64-v2"]' '"link-arg=-Wl,#x", "-C", "target-cpu=native"]'; expect 1 "값 안의 # 뒤 target-cpu=native (TOML 파싱으로 판정)" lb
+mk_ws; printf '[build]\nrustflags = ["-C", "target-cpu=x86-64-v3"]\n' >> "$WS/.cargo/config.toml"; expect 1 "[build].rustflags 로 기준선 우회" lb
+mk_ws; printf '[env]\nRUSTFLAGS = "-C target-cpu=x86-64-v3"\n' >> "$WS/.cargo/config.toml"; expect 1 "[env].RUSTFLAGS 로 기준선 우회" lb
+mk_ws; printf "[target.'cfg(all())']\nrustflags = [\"-C\", \"target-cpu=x86-64-v3\"]\n" >> "$WS/.cargo/config.toml"; expect 1 "다른 target 키의 rustflags" lb
+mk_ws; mkdir -p "$WS/crates/jamulsoe-core/.cargo"; printf '[build]\n' > "$WS/crates/jamulsoe-core/.cargo/config.toml"; expect 1 "하위 디렉터리 .cargo/config.toml" lb
+mk_ws; sub "$WS/Cargo.toml" 'strip = "none"' 'strip = "none"\nopt-level = 1'; expect 1 "[profile.audit] 이 release 와 다른 코드" lb
+mk_ws; sub "$WS/Cargo.toml" '[profile.audit]' '[profile.other]'; expect 1 "[profile.audit] 없음" lb
 mk_ws; sub "$WS/crates/jamulsoe-ffi/Cargo.toml" '"cdylib"' '"cdylib", "staticlib"'; expect 1 "staticlib" lb
 mk_ws; rm -rf "$WS/crates/jamulsoe-ffi"; expect 1 "경계 크레이트 누락" lb
 
