@@ -25,10 +25,10 @@ if have rustup; then
   nightly=$(baseline toolchain nightly)
   if [ -z "$nightly" ]; then
     warn "기준선 미정: build/baseline.toml [toolchain].nightly — Miri·ASan·fuzz(게이트 10·13)를 돌릴 수 없습니다"
-  elif rustup toolchain install "$nightly" --profile minimal --component miri rust-src >/dev/null 2>&1; then
-    ok "$nightly + miri"
+  elif out=$(rustup toolchain install "$nightly" --profile minimal --component miri,rust-src 2>&1); then
+    ok "$nightly + miri, rust-src"
   else
-    fail "$nightly 설치 실패"
+    fail "$nightly 설치 실패"; printf '%s\n' "$out" | tail -5 | sed 's/^/      /'
   fi
 else
   warn "rustup 없음 — https://rustup.rs"
@@ -40,7 +40,8 @@ install_tool() {  # install_tool <실행 이름> <크레이트>
   [ -n "$want" ] || { fail "$2: 기준선에 버전이 없습니다"; return; }
   if have "$1" && cargo install --list 2>/dev/null | grep -q "^$2 v$want:"; then ok "$2 $want"; return; fi
   printf '    설치 중: %s %s\n' "$2" "$want"
-  cargo install "$2" --version "$want" --locked >/dev/null 2>&1 && ok "$2 $want 설치됨" || fail "$2 $want 설치 실패"
+  if out=$(cargo install "$2" --version "$want" --locked 2>&1); then ok "$2 $want 설치됨"
+  else fail "$2 $want 설치 실패"; printf '%s\n' "$out" | tail -5 | sed 's/^/      /'; fi
 }
 if have cargo; then
   install_tool cargo-nextest   cargo-nextest

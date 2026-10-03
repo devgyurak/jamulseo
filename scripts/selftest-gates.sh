@@ -37,6 +37,11 @@ step "스크립트 정적 검사"
 bad_arr=$(grep -nE '(^|[^+])"\$\{[A-Za-z_]+\[@\]\}"' "$ROOT"/scripts/*.sh "$ROOT"/scripts/hooks/*.sh "$ROOT"/.githooks/* 2>/dev/null | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' || true)
 if [ -n "$bad_arr" ]; then fail "빈 배열에 안전하지 않은 펼치기:"; printf '%s\n' "$bad_arr" | sed 's/^/        /'
 else ok "빈 배열 펼치기가 bash 3.2 에서 안전"; fi
+# rustup 의 --component 는 쉼표로 구분한다. 공백으로 나열하면 두 번째부터 툴체인 이름으로 해석되어 설치가 실패한다
+# (CI 에서 bootstrap 이 그렇게 실패했다 — 로컬은 컴포넌트가 이미 있어 드러나지 않았다).
+bad_comp=$(grep -nE -- '--component [A-Za-z0-9_-]+ [a-z]' "$ROOT"/scripts/*.sh 2>/dev/null | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' || true)
+if [ -n "$bad_comp" ]; then fail "rustup --component 가 공백으로 나열됨:"; printf '%s\n' "$bad_comp" | sed 's/^/        /'
+else ok "rustup --component 가 쉼표로 구분됨"; fi
 
 # ── 1. 보호 경로 — 경로만으로 차단 (human) ─────────────────────────
 step "사람 승인 경로 (human)"
