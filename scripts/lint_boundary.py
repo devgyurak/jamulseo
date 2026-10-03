@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from pathlib import Path
@@ -136,11 +137,14 @@ def toml_strings(node) -> list[str]:
 def check_native(root: Path) -> None:
     # 저장소 루트의 .cargo/config.toml 만 허용한다. 하위 디렉터리의 .cargo/config* 와 옛 이름 .cargo/config 는
     # 그 디렉터리에서 빌드할 때 섞여 들어와 기준선 대조를 피한다.
-    for p in sorted(root.glob("**/.cargo/config*")):
-        if "target" in p.relative_to(root).parts:
-            continue
-        if p != root / ".cargo" / "config.toml":
-            err(f"{p.relative_to(root)}: 루트 .cargo/config.toml 밖의 cargo 설정 금지 (C5-10)")
+    # target/·.git/ 은 아예 내려가지 않는다 — 빌드 산출물이 쌓이면 게이트 5 가 느려진다
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if not (Path(dirpath) == root and d in ("target", ".git")) and d != "target"]
+        if Path(dirpath).name == ".cargo":
+            for fn in filenames:
+                p = Path(dirpath) / fn
+                if fn.startswith("config") and p != root / ".cargo" / "config.toml":
+                    err(f"{p.relative_to(root)}: 루트 .cargo/config.toml 밖의 cargo 설정 금지 (C5-10)")
     tomls = [root / ".cargo" / "config.toml", root / "Cargo.toml"] + list((root / "crates").glob("*/Cargo.toml"))
     for p in tomls:
         if not p.exists():

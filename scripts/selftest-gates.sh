@@ -43,7 +43,7 @@ bad_comp=$(grep -nE -- '--component [A-Za-z0-9_-]+ [a-z]' "$ROOT"/scripts/*.sh 2
 if [ -n "$bad_comp" ]; then fail "rustup --component 가 공백으로 나열됨:"; printf '%s\n' "$bad_comp" | sed 's/^/        /'
 else ok "rustup --component 가 쉼표로 구분됨"; fi
 # RUSTFLAGS 환경변수는 .cargo/config.toml 의 기준선 CPU 플래그를 대체한다 — 직접 쓰는 곳은 $BASE_RUSTFLAGS 를 앞에 붙인다 (C5-10).
-bad_rf=$(grep -nE '(^|[^A-Z_])RUSTFLAGS=' "$ROOT"/scripts/*.sh 2>/dev/null | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' | grep -v 'BASE_RUSTFLAGS' || true)
+bad_rf=$(grep -nE '(^|[^A-Z_])(CARGO_ENCODED_)?RUSTFLAGS=' "$ROOT"/scripts/*.sh 2>/dev/null | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' | grep -v 'BASE_RUSTFLAGS' || true)
 if [ -n "$bad_rf" ]; then fail "기준선 CPU 플래그 없이 RUSTFLAGS 를 덮어씀:"; printf '%s\n' "$bad_rf" | sed 's/^/        /'
 else ok "RUSTFLAGS 를 쓰는 곳은 기준선 CPU 플래그를 포함"; fi
 # "+nightly" 는 고정되지 않은 채널이다 — 기준선 nightly($BASE_NIGHTLY)를 쓴다.
@@ -193,6 +193,7 @@ mk_ws; printf '[build]\nrustflags = ["-C", "target-cpu=x86-64-v3"]\n' >> "$WS/.c
 mk_ws; printf '[env]\nRUSTFLAGS = "-C target-cpu=x86-64-v3"\n' >> "$WS/.cargo/config.toml"; expect 1 "[env].RUSTFLAGS 로 기준선 우회" lb
 mk_ws; printf "[target.'cfg(all())']\nrustflags = [\"-C\", \"target-cpu=x86-64-v3\"]\n" >> "$WS/.cargo/config.toml"; expect 1 "다른 target 키의 rustflags" lb
 mk_ws; mkdir -p "$WS/crates/jamulsoe-core/.cargo"; printf '[build]\n' > "$WS/crates/jamulsoe-core/.cargo/config.toml"; expect 1 "하위 디렉터리 .cargo/config.toml" lb
+mk_ws; mkdir -p "$WS/target/x/.cargo"; printf '[build]\n' > "$WS/target/x/.cargo/config.toml"; expect 0 "target/ 아래는 걷지 않음" lb
 mk_ws; sub "$WS/Cargo.toml" 'strip = "none"' 'strip = "none"\nopt-level = 1'; expect 1 "[profile.audit] 이 release 와 다른 코드" lb
 mk_ws; sub "$WS/Cargo.toml" '[profile.audit]' '[profile.other]'; expect 1 "[profile.audit] 없음" lb
 mk_ws; sub "$WS/crates/jamulsoe-ffi/Cargo.toml" '"cdylib"' '"cdylib", "staticlib"'; expect 1 "staticlib" lb
