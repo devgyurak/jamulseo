@@ -22,11 +22,11 @@
 
 - [ ] 에이전트 워크플로우 (`AGENTS.md`, `.agents/`, 어댑터, 훅, `.githooks/`)
 - [ ] `./scripts/bootstrap.sh` 실행, `./scripts/selftest-gates.sh` 통과
-- [ ] 워크스페이스: `crates/jamulsoe-{core,module,ffi}` 골격 + `jamulsoe-oracle`·`jamulsoe-ct` (경계 밖)
-- [ ] **기준선 결정 (사람)**: `build/baseline.toml` 의 rust·nightly·target_cpu·ct_host_model·프로파일 값 → `rust-toolchain.toml`, `.cargo/config.toml`, 워크스페이스 `[profile.release]` 를 그 값으로
+- [x] 워크스페이스: `crates/jamulsoe-{core,module,ffi}` 골격 + `jamulsoe-oracle`·`jamulsoe-ct` (경계 밖) — 2026-10-03, 구현 없음
+- [x] **기준선 결정 (사람)**: rust 1.99.0, nightly-2026-09-30, target_cpu x86-64, lto fat, codegen-units 1, strip symbols, opt-level 3 — 2026-10-03 devgyurak 확정, `rust-toolchain.toml`·`.cargo/config.toml`·`[profile.release]` 반영 (`ct_host_model` 은 기준 장비를 정한 뒤)
 - [ ] **승인 체계 (사람)**: `.github/APPROVERS`, `.github/allowed_signers`(하드웨어 키 권장), GitHub 규칙셋 — `protected` job 을 required check 로, 서명 커밋, 코드 오너 리뷰, **머지 커밋만 허용(스쿼시·리베이스 끔)** (`docs/RELEASE.md`), **머지 전 브랜치 최신화 요구**(순 변경 판정이 낡은 머지 결과로 통과하지 않게 — push 판정이 사후에 한 번 더 본다)
 - [ ] `./scripts/bootstrap.sh` 로 `core.hooksPath` 설정 (첫 커밋 **뒤에**)
-- [ ] `./scripts/lint-boundary.sh` 통과 (C5-01~04, C5-07)
+- [x] `./scripts/lint-boundary.sh` 통과 (C5-01~04, C5-07, C5-10)
 - [ ] `tests/vectors/`: RFC 5794, RFC 4231, NIST CAVP SHA-256 원본 + `SOURCES.md`
 - [ ] KISA 검증대상 알고리즘 테스트 벡터 확보 (사람) → 추가
 - [ ] 벡터 러너 자기 검증: 오라클로 정답 벡터를 통과하고, 기대값 한 바이트를 바꾼 사본으로는 **기대값 불일치로** 실패한다 (러너가 실제로 비교함)
@@ -70,7 +70,7 @@
 - [ ] `./.github/rulesets/apply.sh` 로 확인 → `--apply` (기본 브랜치 develop, 머지 커밋만, `develop`·`kcmvp/**` 규칙셋. `main` 규칙셋은 첫 릴리스로 `main` 을 만든 뒤)
 
 **M0 안에**
-- [ ] `build/baseline.toml` 값 결정 — 제안: rust 1.99.0, nightly-2026-09-30, target_cpu x86-64, lto fat, codegen-units 1, strip symbols, opt-level 3 (§3)
+- [x] `build/baseline.toml` 값 결정 (2026-10-03)
 - [ ] dudect 기준 장비 마련 (터보·SMT 끄기 등 §3) → `ct_host_model`
 - [ ] 표준 원문: KS X 3254·3275 (국립전파연구원 무료), KS X 1213-1 (KSSN 23,100원 또는 e-나라 무료 열람) → `docs/standards/local/` + 해시 (§2)
 - [ ] KISA 자료 내려받기: 제출물 작성 안내서 2025.9., GVI Part 1·2, 테스트 벡터 zip(ARIA·SHA2·HMAC) — 벡터는 재배포 조건 확인 전까지 로컬에만 (§1.3·1.4)
@@ -125,3 +125,4 @@
 | 날짜 | 변경 |
 |---|---|
 | 2026-10-02 | M0 시작. 계획서 동결본(`docs/PLAN.md`) 기준으로 에이전트 워크플로우 구축 |
+| 2026-10-03 | 기준선 확정, 워크스페이스 골격. 게이트 6(테스트 0개)은 M0 하네스(오라클·러너·상수 시간 하네스 자기 검증)가 들어올 때까지 실패가 정상 |

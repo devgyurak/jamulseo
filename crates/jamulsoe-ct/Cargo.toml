@@ -1,0 +1,9 @@
+[package]
+name = "jamulsoe-ct"
+description = "jamulsoe 상수 시간 하네스 (모듈 경계 밖): ctgrind, dudect"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true

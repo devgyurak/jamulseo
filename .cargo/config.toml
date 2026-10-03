@@ -1,0 +1,4 @@
+# CPU 기준선 (docs/CONTRACTS.md C5-10) — build/baseline.toml [cpu].target_cpu 와 같아야 한다 (lint-boundary 가 대조).
+# target-cpu=native 는 쓰지 않는다. 검증 대상 환경(x86_64 Linux) 빌드에만 적용된다.
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "target-cpu=x86-64"]

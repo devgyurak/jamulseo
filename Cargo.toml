@@ -1,0 +1,25 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.99"
+license = "Apache-2.0"
+repository = "https://github.com/devgyurak/jamulseo"
+publish = false
+
+# 릴리스 프로파일 = build/baseline.toml [profile.release] (C5-04, C5-10). lint-boundary 가 대조한다.
+# 바꾸면 상수 시간 검사와 어셈블리 감사를 다시 해야 한다.
+[profile.release]
+panic = "abort"
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
+opt-level = 3
+
+# 어셈블리 감사용 — 릴리스와 같고 심볼만 남긴다 (.text 는 strip 과 무관하게 같다: docs/research/2026-10-03.md §3)
+[profile.audit]
+inherits = "release"
+strip = "none"
