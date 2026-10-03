@@ -63,7 +63,13 @@
 
 **첫 커밋 전후**
 - [ ] 셸로 고친 보호 파일 diff 검토, `docs/PLAN.md` 를 원본과 대조
-- [ ] 서명 키 두 개: 일상 키(소프트웨어) + 승인 키(하드웨어 `ed25519-sk`, `brew install openssh` 필요). 둘 다 GitHub Signing Key 로 등록, 승인 키만 `.github/allowed_signers` 에 (§4.3)
+- [ ] **승인 체계 부트스트랩 (사람, 한 번만)** — PR #1 리뷰 [P2]-2. 승인자 목록을 채우는 변경도 보호 경로라 어떤 PR 로도 들어갈 수 없으므로, **관리자 직접 push 를 이번 한 번만** 쓴다
+  1. 키 두 개: 일상 키(소프트웨어) + 승인 키(하드웨어 `ed25519-sk`, `brew install openssh`). 둘 다 GitHub Signing Key 로 등록, dev@devgyurak.com 이 확인된 이메일인지 확인 (`docs/research/2026-10-03.md` §4.3)
+  2. 이 클론에서: `git config --local gpg.format ssh` · `git config --local user.signingkey ~/.ssh/<일상 키>.pub` · `git config --local commit.gpgsign true`
+  3. `develop` 에서 `.github/allowed_signers` 에 승인 키 한 줄만 추가해 커밋 — `JMS_APPROVED_BY=devgyurak git -c user.signingkey=~/.ssh/<승인 키>.pub commit -s -S` (메시지에 `Approved-by: devgyurak`) → `git push origin develop`
+  4. 아래 갱신 로그에 그 커밋 해시와 "승인 체계 부트스트랩 — 관리자 직접 push, 다시 없음" 을 남긴다 (이 커밋의 push 판정은 base 의 서명자 목록이 비어 있어 실패한다 — 그것이 기록이다)
+  5. PR #1 브랜치를 새 `develop` 위로 옮기며 커밋을 다시 서명: `git checkout build/m0-workspace && git -c user.signingkey=~/.ssh/<승인 키>.pub rebase develop --exec 'git commit --amend --no-edit -S'` → `git push --force-with-lease` (커밋마다 키 터치. 승인 서명 전의 커밋이라 리베이스로 다시 만드는 예외를 이번에만 쓴다)
+  6. 그 뒤로는 우회 없음 — `./.github/rulesets/apply.sh --apply`
 - [ ] dev@devgyurak.com 이 devgyurak 계정의 확인된 이메일인지 확인 (Verified 조건)
 - [x] 첫 push — `develop` (2026-10-03, 서명 없음. 승인 키가 생기면 보호 경로 커밋을 승인 키로 다시 서명해야 `main` 릴리스 PR 의 판정을 통과한다)
 - [ ] `./scripts/bootstrap.sh` (`core.hooksPath` 설정)
@@ -126,3 +132,5 @@
 |---|---|
 | 2026-10-02 | M0 시작. 계획서 동결본(`docs/PLAN.md`) 기준으로 에이전트 워크플로우 구축 |
 | 2026-10-03 | 기준선 확정, 워크스페이스 골격. 게이트 6(테스트 0개)은 M0 하네스(오라클·러너·상수 시간 하네스 자기 검증)가 들어올 때까지 실패가 정상 |
+| 2026-10-03 | PR #1 교차 리뷰(Fable 5.1 세션, 구현 이력 없음): [P1] 0 / [P2] 3 / [P3] 3. [P2]-1·[P3] 반영. [P2]-2 는 위 승인 체계 부트스트랩(사람). [P2]-3: 게이트 6 이 빨간 채로 머지하지 않는다 — M0 하네스 PR 을 PR #1 위에 쌓아 함께 들인다 |
+| — | (승인 체계 부트스트랩 커밋 해시를 여기에 — 사람) |
